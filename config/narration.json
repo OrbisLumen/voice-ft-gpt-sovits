@@ -1,0 +1,6 @@
+{
+  "source": "texts/口播稿.md",
+  "chapter_overrides": {"1": "texts/序_短视频版.txt"},
+  "repository": "vendor/GPT-SoVITS",
+  "final": {"sample_rate": 48000, "loudness_lufs": -22, "true_peak_db": -1.5}
+}

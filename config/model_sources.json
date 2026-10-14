@@ -1,0 +1,44 @@
+{
+  "lj1995/GPT-SoVITS": {
+    "revision": "8f8857563c040d542de108a2c18b0425abd6c9c5",
+    "directory": "vendor\\GPT-SoVITS\\GPT_SoVITS\\pretrained_models",
+    "patterns": [
+      "s1v3.ckpt",
+      "v2Pro/s2Gv2Pro.pth",
+      "v2Pro/s2Dv2Pro.pth",
+      "sv/pretrained_eres2netv2w24s4ep4.ckpt"
+    ]
+  },
+  "hfl/chinese-roberta-wwm-ext-large": {
+    "revision": "a25cc9e05974bd9687e528edd516f2cfdb3f5db9",
+    "directory": "vendor\\GPT-SoVITS\\GPT_SoVITS\\pretrained_models\\chinese-roberta-wwm-ext-large",
+    "patterns": [
+      "config.json",
+      "pytorch_model.bin",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.txt",
+      "special_tokens_map.json"
+    ]
+  },
+  "TencentGameMate/chinese-hubert-base": {
+    "revision": "fce0375452b1dd6c080ac3248d423d4d037bc831",
+    "directory": "vendor\\GPT-SoVITS\\GPT_SoVITS\\pretrained_models\\chinese-hubert-base",
+    "patterns": [
+      "config.json",
+      "pytorch_model.bin",
+      "preprocessor_config.json"
+    ]
+  },
+  "Systran/faster-whisper-small": {
+    "revision": "536b0662742c02347bc0e980a01041f333bce120",
+    "directory": "vendor\\GPT-SoVITS\\tools\\asr\\models\\faster-whisper-small",
+    "patterns": [
+      "config.json",
+      "model.bin",
+      "tokenizer.json",
+      "vocabulary.txt",
+      "preprocessor_config.json"
+    ]
+  }
+}

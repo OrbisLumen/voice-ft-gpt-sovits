@@ -1,0 +1,31 @@
+{
+  "name": "misuzu_gsv_v2pro_v1",
+  "repository": "vendor/GPT-SoVITS",
+  "commit": "1b47ca07ef43a284e0b8bd7f29d3e1e3ff76082a",
+  "version": "v2Pro",
+  "source_manifest": "data/manifests/misuzu_sources.json",
+  "selected_only": true,
+  "dataset": "data/datasets/misuzu_gsv_v2pro_v1",
+  "work": "runs/misuzu_gsv_v2pro_v1",
+  "output": "outputs/misuzu_gsv_v2pro_v1",
+  "language": "ja",
+  "seed": 20261012,
+  "min_seconds": 1.0,
+  "max_seconds": 15.0,
+  "asr": {
+    "repository": "Systran/faster-whisper-small",
+    "device": "cuda",
+    "compute_type": "float16",
+    "beam_size": 5
+  },
+  "training": {
+    "sovits_batch_size": 2,
+    "gpt_batch_size": 2,
+    "sovits_epochs": 20,
+    "gpt_epochs": 10,
+    "save_every_epoch": 1,
+    "gradient_checkpointing": true,
+    "gpt_num_workers": 0
+  },
+  "weights": "models/misuzu_gsv_v2pro_v1"
+}

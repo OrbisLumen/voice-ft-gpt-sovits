@@ -1,0 +1,15 @@
+name: Offline checks
+on: [push, workflow_dispatch]
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test local configuration and control checks
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
