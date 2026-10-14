@@ -1,14 +1,16 @@
-# 心铃本地配音 · GPT-SoVITS v2Pro
+# 多角色本地配音 · GPT-SoVITS v2Pro
 
 项目根目录：`D:\Project\voice`。当前采用本地GPT-SoVITS，SoVITS20轮 + GPT10轮，直接生成中文和日语语音。
 
 ## 网页界面
 
-- 双击 **[Start-Inference.cmd](Start-Inference.cmd)**：官方快速推理界面，浏览器打开 `http://127.0.0.1:9872`。默认加载20/10，模型下拉列表包含本任务各轮权重。
+- 双击 **[Start-Inference.cmd](Start-Inference.cmd)**：带角色管理的官方快速推理界面，浏览器打开 `http://127.0.0.1:9872`。选择角色、任务与两份权重，点击“加载所选模型”。当前加载心铃20/10，后续记住每个任务的模型选择。
 - 双击 **[Start-WebUI.cmd](Start-WebUI.cmd)**：官方训练与数据处理主界面，`http://127.0.0.1:9874`。
 - 用完在对应终端按Ctrl+C关闭。两个界面使用同一独立Python环境，不必打开Jupyter。
 
 参考音频：`data/datasets/misuzu_gsv_v2pro_v1/wavs/fem_mis_00025_000.wav`；参考语种选日文，文本填 `校長先生からは許可書を頂いてますが`。目标语种选中文，输入文稿并合成。参数与局部语速调整见 [界面说明](docs/inference.md)。
+
+展开页面“管理角色、数据与参考音频”可登记任意数量的角色，每个角色支持多个独立训练任务、模型导入和参考保存。心铃数据与全部权重保留；雫已登记且未训练。操作与训练命令见 [多角色管理](docs/characters.md)。
 
 ## 目录
 

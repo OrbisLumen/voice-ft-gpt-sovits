@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "task_template": "config/task_template.json",
+  "default_character": "misuzu",
+  "characters": {
+    "misuzu": {
+      "display_name": "本间心铃",
+      "language": "ja",
+      "raw_directory": "data/source_library/honma_misuzu",
+      "active_task": "misuzu_gsv_v2pro_v1",
+      "tasks": {
+        "misuzu_gsv_v2pro_v1": {
+          "config": "config/task.json",
+          "reference": {
+            "audio_path": "data/datasets/misuzu_gsv_v2pro_v1/wavs/fem_mis_00025_000.wav",
+            "text": "校長先生からは許可書を頂いてますが",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "shizuku": {
+      "display_name": "夏目雫",
+      "language": "ja",
+      "raw_directory": "data/source_library/natsume_shizuku",
+      "active_task": "shizuku_v2pro_v1",
+      "tasks": {
+        "shizuku_v2pro_v1": {
+          "config": "config/characters/shizuku/v1.json",
+          "reference": null
+        }
+      }
+    }
+  }
+}

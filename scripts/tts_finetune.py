@@ -26,7 +26,7 @@ def data_signature(config):
         ('name', 'source_manifest', 'selected_only', 'dataset', 'language', 'min_seconds', 'max_seconds')})
 
 
-def read_review(path, manifest):
+def read_review(path, manifest, language='ja'):
     with path.open(encoding='utf-8-sig', newline='') as stream:
         rows = list(csv.DictReader(stream))
     expected = {r['name']: r for r in manifest['clips'] if r['eligible']}
@@ -37,8 +37,8 @@ def read_review(path, manifest):
             raise ValueError(f'Transcript not reviewed: {row["name"]}')
         if not row['text'].strip() or any(x in row['text'] for x in ('|', '\n', '\r')):
             raise ValueError(f'Invalid transcript: {row["name"]}')
-        if row['language'] != 'ja':
-            raise ValueError('This task is Japanese target speech; do not label it Chinese.')
+        if row['language'] != language:
+            raise ValueError(f'Transcript language must match task language: {language}')
     return rows
 
 
@@ -161,8 +161,10 @@ class Task:
             if digest(source) != row['sha256']:
                 raise ValueError(f'Source hash differs: {source}')
             audio, rate = sf.read(source, dtype='float32')
-            if audio.ndim != 1 or not np.isfinite(audio).all():
-                raise ValueError('Require finite mono target audio.')
+            if not np.isfinite(audio).all():
+                raise ValueError('Require finite target audio.')
+            if audio.ndim==2: audio=audio.mean(axis=1)
+            if audio.ndim!=1: raise ValueError('Unsupported audio channel layout.')
             audio = resample_poly(audio, 32000, rate).astype('float32')
             source_rows.append({'path': str(source.relative_to(ROOT)), 'sha256': row['sha256'],
                                 'original': row['source']})
@@ -211,7 +213,8 @@ class Task:
             # Pass a 16k waveform directly; newer PyAV removed an argument used by Faster Whisper 1.2.
             waveform, sample_rate = sf.read(ROOT/row['path'], dtype='float32')
             waveform = resample_poly(waveform, 16000, sample_rate).astype('float32')
-            segments, info = model.transcribe(waveform, language='ja', beam_size=self.cfg['asr']['beam_size'],
+            asr_language='zh' if self.cfg['language']=='yue' else self.cfg['language']
+            segments, info = model.transcribe(waveform, language=asr_language, beam_size=self.cfg['asr']['beam_size'],
                 vad_filter=True, condition_on_previous_text=False)
             pieces = list(segments)
             text = ''.join(p.text for p in pieces).strip()
@@ -232,19 +235,19 @@ class Task:
                 if row['name'] in existing and existing[row['name']]['text'].strip():
                     writer.writerow(existing[row['name']])
                 else:
-                    writer.writerow({'name': row['name'], 'language': 'ja',
+                    writer.writerow({'name': row['name'], 'language': self.cfg['language'],
                         'text': utils.read_json(result)['text'] if result.exists() else '', 'reviewed': 'false',
                         'audio_path': row['path']})
         print('Review transcripts:', review)
 
     def audit(self):
         manifest = utils.read_json(self.work/'dataset_manifest.json')
-        rows = read_review(self.work/'review.csv', manifest)
+        rows = read_review(self.work/'review.csv', manifest, self.cfg['language'])
         by_name = {r['name']: r for r in manifest['clips']}
         for row in rows:
             if digest(ROOT/by_name[row['name']]['path']) != by_name[row['name']]['sha256']:
                 raise ValueError('Training audio changed since preparation.')
-        text = '\n'.join(f'{ROOT/by_name[r["name"]]["path"]}|{self.cfg["name"]}|ja|{r["text"].strip()}' for r in rows)+'\n'
+        text = '\n'.join(f'{ROOT/by_name[r["name"]]["path"]}|{self.cfg["name"]}|{r["language"]}|{r["text"].strip()}' for r in rows)+'\n'
         path = self.work/'train.list'
         if path.exists() and path.read_text(encoding='utf-8') != text and (self.experiment/'2-name2text.txt').exists():
             raise ValueError('Reviewed text changed after feature preparation; use another task name.')
@@ -378,9 +381,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('stage', choices=['doctor', 'prepare', 'transcribe', 'audit', 'features', 'train-sovits', 'train-gpt', 'sample', 'status'])
     parser.add_argument('--config', default=DEFAULT)
+    parser.add_argument('--character', help='Registered character ID')
+    parser.add_argument('--task', help='Registered task ID (with --character)')
     parser.add_argument('--limit', type=int, help='Only transcribe this many clips for a smoke check')
     parser.add_argument('--epochs', type=int, help='Total epoch limit override for a short training check')
     args = parser.parse_args()
+    if args.task and not args.character: parser.error('--task requires --character')
+    if args.character:
+        from character_manager import CharacterStore
+        args.config=CharacterStore().task(args.character,args.task)[2]['config']
     task = Task(args.config)
     if Path(sys.executable).resolve() != task.backend.resolve():
         return subprocess.run([str(task.backend), str(Path(__file__).resolve()), *sys.argv[1:]], cwd=ROOT).returncode

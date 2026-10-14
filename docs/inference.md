@@ -1,6 +1,8 @@
 # 本地TTS推理界面
 
-GPT-SoVITS自带Gradio网页界面。本地启动入口 `scripts/tts_webui.py` 使用同一独立环境与TTS引擎，默认显式加载SoVITS20/GPT10，并将本任务推理权重目录加入下拉列表；使用上游快速推理UI，不运行训练。
+GPT-SoVITS自带Gradio网页界面。本地启动入口 `scripts/tts_webui.py` 使用同一独立环境与TTS引擎，当前默认心铃SoVITS20/GPT10，记住每个任务的成功模型选择；在上游快速推理UI加入任意数量角色和训练任务管理，不运行训练。
+
+顶部选角色和训练任务，下方选两份权重，再点击“加载所选模型”。参考信息按任务恢复；未训练任务不能合成。展开管理区可以登记新角色、创建新任务、上传原素材、导入配套模型及保存参考。详细目录和训练命令见 [多角色管理](characters.md)。
 
 ```powershell
 Set-Location D:\Project\voice

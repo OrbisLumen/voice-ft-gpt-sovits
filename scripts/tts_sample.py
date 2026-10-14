@@ -13,16 +13,44 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', default='config/task.json')
+    parser.add_argument('--character')
+    parser.add_argument('--task')
     parser.add_argument('--gpt-epoch', type=int)
     parser.add_argument('--sovits-epoch', type=int)
     parser.add_argument('--japanese-only', action='store_true')
     parser.add_argument('--text-files', nargs='+', help='UTF-8 plain text files to narrate in Chinese')
     args = parser.parse_args()
+    if args.task and not args.character:
+        parser.error('--task requires --character')
+    from character_manager import CharacterStore
+    store=CharacterStore()
+    profile=None
+    if args.character:
+        _,task_id,profile,_=store.task(args.character,args.task)
+        args.config=profile['config']
     if args.text_files and args.japanese_only:
         parser.error('--text-files generates Chinese narration; do not combine with --japanese-only.')
     cfg = json.loads((ROOT/args.config).read_text(encoding='utf-8'))
-    args.gpt_epoch = args.gpt_epoch or cfg['training']['gpt_epochs']
-    args.sovits_epoch = args.sovits_epoch or cfg['training']['sovits_epochs']
+    selected=None
+    for character_id,character in store.read()['characters'].items():
+        for task_id,entry in character['tasks'].items():
+            if store.local(entry['config'])==(ROOT/args.config).resolve():
+                profile=entry
+                choices=store.models(character_id,task_id)
+                selected=store.defaults(character_id,task_id)
+                for stage,epoch in [('gpt',args.gpt_epoch),('sovits',args.sovits_epoch)]:
+                    if epoch is not None:
+                        matches=[p for label,p in choices[stage] if label.startswith(f'{epoch}e · ')]
+                        if len(matches)!=1: raise ValueError(f'Select one existing {stage} epoch {epoch}.')
+                        selected[stage]=matches[0]
+                    else:
+                        label=next((label for label,p in choices[stage] if p==selected[stage]),'')
+                        token=label.split('e · ',1)[0]
+                        setattr(args,stage+'_epoch',int(token) if token.isdigit() else None)
+                break
+    if not selected:
+        args.gpt_epoch = args.gpt_epoch or cfg['training']['gpt_epochs']
+        args.sovits_epoch = args.sovits_epoch or cfg['training']['sovits_epochs']
     repo, work, output = (ROOT/cfg[k] for k in ('repository', 'work', 'output'))
     os.chdir(repo)
     sys.path[:0] = [str(repo), str(repo/'GPT_SoVITS')]
@@ -35,24 +63,34 @@ def main():
     weights = ROOT/cfg['weights']
     gpt = weights/'gpt'/f'{cfg["name"]}-e{args.gpt_epoch}.ckpt'
     sovits = sorted((weights/'sovits').glob(f'{cfg["name"]}_e{args.sovits_epoch}_s*.pth'))
+    if selected:
+        if not selected['gpt'] or not selected['sovits']: raise ValueError('Task has no paired weights.')
+        gpt=Path(selected['gpt'])
+        sovits=[Path(selected['sovits'])]
     if not gpt.is_file() or len(sovits) != 1:
         raise ValueError('Select one existing fine-tuned checkpoint per phase; no base-model fallback.')
     settings = {'device': 'cuda', 'is_half': True, 'version': cfg['version'],
         't2s_weights_path': str(gpt), 'vits_weights_path': str(sovits[0]),
         'bert_base_path': str(repo/'GPT_SoVITS/pretrained_models/chinese-roberta-wwm-ext-large'),
         'cnhuhbert_base_path': str(repo/'GPT_SoVITS/pretrained_models/chinese-hubert-base')}
-    with (work/'review.csv').open(encoding='utf-8-sig', newline='') as stream:
-        rows = list(csv.DictReader(stream))
+    reference=(profile or {}).get('reference')
+    rows=[]
+    if not reference:
+        with (work/'review.csv').open(encoding='utf-8-sig', newline='') as stream:
+            rows = list(csv.DictReader(stream))
     references = []
     for row in rows:
         path = ROOT/row['audio_path']
         if 3 <= sf.info(path).duration <= 8 and row['reviewed'].lower() == 'true':
             references.append(row)
-    if not references:
+    if not reference and not references:
         raise ValueError('No reviewed 3–8 second reference.')
-    reference = references[0]
+    reference = reference or references[0]
     prefix = 'narration' if args.text_files else 'samples'
-    target = output/f'{prefix}_s{args.sovits_epoch}_g{args.gpt_epoch}'
+    suffix=f's{args.sovits_epoch}_g{args.gpt_epoch}'
+    if args.sovits_epoch is None or args.gpt_epoch is None:
+        suffix=hashlib.sha256((str(sovits[0])+str(gpt)).encode()).hexdigest()[:12]
+    target = output/f'{prefix}_{suffix}'
     target.mkdir(exist_ok=True)
     sentences = [('ja_daily', 'all_ja', '今日はいい天気ですね。少し散歩しませんか？')]
     if not args.japanese_only:
@@ -78,7 +116,7 @@ def main():
             (target/(name+'.txt')).write_text(text+'\n', encoding='utf-8')
         print('Synthesizing:', name, len(text), 'characters', flush=True)
         request = {'text': text, 'text_lang': language,
-            'ref_audio_path': str(ROOT/reference['audio_path']), 'prompt_lang': 'all_ja', 'prompt_text': reference['text'],
+            'ref_audio_path': str(ROOT/reference['audio_path']), 'prompt_lang': 'all_'+reference.get('language',cfg['language']), 'prompt_text': reference['text'],
             'top_k': 15, 'top_p': 1.0, 'temperature': 1.0, 'text_split_method': 'cut5', 'batch_size': 1,
             'speed_factor': 1.0, 'seed': cfg['seed'], 'parallel_infer': False, 'return_fragment': False}
         chunks = list(tts.run(request))

@@ -114,6 +114,8 @@ def windows_requirements(repo, work):
         backup.parent.mkdir(parents=True,exist_ok=True)
         if not backup.exists(): backup.write_text(text,encoding='utf-8')
         source.write_text(changed,encoding='utf-8')
+    from patch_character_ui import patch_character_ui
+    patch_character_ui(repo,work)
     return path
 
 
