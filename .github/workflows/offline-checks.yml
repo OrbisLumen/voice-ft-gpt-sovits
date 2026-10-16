@@ -11,5 +11,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install control and UI test dependencies
+        run: python -m pip install -r config/requirements-test.txt
       - name: Test local configuration and control checks
         run: python -m unittest discover -s tests -p 'test_*.py' -v
