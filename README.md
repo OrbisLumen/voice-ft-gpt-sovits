@@ -26,7 +26,7 @@
 | `outputs/` | 短句、轮次对比、长文、自动转写和最终音频 |
 | `vendor/GPT-SoVITS/` | 官方克隆、固定提交、独立环境、预训练模型及Windows适配 |
 | `config/` | 本地任务、模型下载revision、依赖锁、文稿与响度配置 |
-| `texts/` | 原稿、口播稿、《序》短视频稿 |
+| `texts/` | [original.md](texts/original.md) 原稿、[narration_v1.md](texts/narration_v1.md) 口播稿第一版（含《序》及各章节） |
 | `scripts/` | 安装、校对审计、训练、推理、WebUI、文稿提取、音频整理 |
 | `notebooks/` | 当前训练入口；`history/`完整保留原已执行notebook |
 | `docs/` | 当前操作指南、GPT阶段实验与训练历史 |
