@@ -46,4 +46,6 @@
 
 原始音声全部保留；旧远端配音、密钥环境及旧转换工作已退役。Git从本轮整理重新开始，只管理代码、配置、文稿和文档；音频、权重、特征、运行记录及内嵌音频的历史notebook均留在本机，不提交。
 
+文件边界、验证命令与 `feat` / `fix` / `docs` / `chore` 等提交规范见 [仓库维护指南](CONTRIBUTING.md)。
+
 官方仓库：[RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)。当前固定提交 `1b47ca07ef43a284e0b8bd7f29d3e1e3ff76082a`，保留验证过的v2Pro环境。
