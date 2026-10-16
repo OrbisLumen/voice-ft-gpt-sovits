@@ -8,7 +8,7 @@
 
 - 源索引：`data/manifests/misuzu_sources.json`，记录当前18段训练源、5段留出源、选择标记及音频SHA256。
 - 切片：`data/datasets/misuzu_gsv_v2pro_v1/wavs/`。
-- 人工校对：`runs/misuzu_gsv_v2pro_v1/review.csv`；日语language=ja，64条reviewed=true。
+- 人工校对：`data/datasets/misuzu_gsv_v2pro_v1/review.csv`；日语language=ja，64条reviewed=true。
 - 原转写、朋友编码错误的原件、修复与审计记录：同任务的 `asr_drafts/`、`encoding_backup_20261013/`、`encoding_repair_20261013.json` 等。
 - 特征：同任务 `features/`，含音素、中文HuBERT、32k音频、语义token、说话人嵌入。已核对64条无遗漏及有限数值。
 - 续训状态：`features/logs_s2_v2Pro/` 的SoVITS G/D，`logs_s1_v2Pro/ckpt/epoch=9-step=150.ckpt` 的GPT完整状态。
@@ -26,12 +26,26 @@
 
 总轮数是上限，目标权重已存在时复用；本次整理检查确认20/10都复用原权重，没有额外训练。特征、音频哈希及校对状态仍受检查，未校对标签不能进入训练。
 
-新增素材应另建任务名与源索引，不改当前任务的数据选择后直接续训。新任务依次prepare、transcribe，人工校对review.csv，再audit、features、train-sovits、train-gpt。使用源级划分，避免同一原音的相邻切片跨训练和留出集。
+新增素材应另建任务名与源索引，不改当前任务的数据选择后直接续训。新任务依次prepare、transcribe，人工校对各任务 data/datasets/<任务ID>/review.csv，再audit、features、train-sovits、train-gpt。使用源级划分，避免同一原音的相邻切片跨训练和留出集。
 
 ## Notebook与历史
 
-当前 `notebooks/finetune_misuzu_tts.ipynb` 默认20/10，准备、转写与特征提取关闭，训练与试听开启。使用Python (voice)内核，计算交给独立GPT环境。
+当前 `notebooks/finetune_misuzu_tts.ipynb` 默认20/10，准备、转写、特征提取、训练与试听均默认关闭；检查标注后再手动开启相应阶段。使用Python (voice)内核，计算交给独立GPT环境。
 
 原已执行notebook及完整输出原样保存在 `notebooks/history/finetune_before_reorganization_20261014.ipynb`。历史日志和二进制检查点中的旧绝对路径保留作历史记录；当前配置、校对、train.list及特征清单已迁移，路径对应关系见 `runs/misuzu_gsv_v2pro_v1/maintenance/migration_manifest.json`。
 
 当前参数batch2、半精度、梯度检查点、GPT workers0。RTX5060 Laptop约8GB环境已完成真实两阶段训练，后续扩大数据或更改batch时仍需观察显存与试听结果。
+
+## 其他角色的首版准备
+
+见 [本次准备说明](dataset_preparation.md)。统一检查入口是 `data/datasets/index.html`；每个任务提供 review.html（音频和文本只读快照）、review.csv（唯一校对源）、review_flags.json（自动检查提示）和 wavs/。
+
+现有首版角色均已完成特征提取及20/10训练；心铃使用人工校对标注，其余角色按用户授权接受现有转写并排除空文本。所有 notebook 默认关闭训练与试听。新任务仍先完成标注检查，未确认或接受的标注会被 features、train-sovits、train-gpt 的校对检查拦住。
+
+## 蓝的首轮20/10训练
+
+蓝 `ai_gsv_v2pro_v1` 已按用户基于朋友抽查的授权接受现有标注；这不代表每句均经人工听写校对。唯一空转写 `aid_001489_003.wav` 已从训练候选排除，音频和原标注备份保留。最终83条、206.2812秒，完成特征提取、SoVITS20轮和GPT10轮。详见 [蓝训练记录](experiments/2026-10-15-ai.md)。
+
+## 其余六角色20/10训练
+
+2026-10-16按用户要求，雫、禀、圭、里奈、优美、真琴以现有转写完成 SoVITS20轮/GPT10轮训练。共387条有效标注，排除6条空转写，原音频及修改前标注保留。120份SoVITS和60份GPT逐轮推理权重齐全，18条中日文样音通过实际生成及文件有效性检查。各任务默认20/10与参考音频已保存，详见 [训练记录](experiments/2026-10-16-remaining-characters.md)。

@@ -2,7 +2,7 @@
 
 打开 `http://127.0.0.1:9872/`，页面顶部选择角色、训练任务，下方选择 GPT 和 SoVITS 权重，再点击 **加载所选模型**。角色数量、任务数量由配置登记，添加角色无需改代码。当前使用已验证的 v2Pro 架构；不同架构的权重仍需对应运行环境与适配，不能混装。
 
-心铃保留原数据、校对、全部 GPT 1–10e 和 SoVITS 1–20e，当前加载 20e/10e。雫已登记原素材目录，但尚未选择训练源和训练。无配套模型的任务会显示未训练并禁止合成，不会借用心铃模型。
+心铃保留原数据、校对、全部 GPT 1–10e 和 SoVITS 1–20e，当前加载 20e/10e。蓝的 `ai_gsv_v2pro_v1` 已按用户授权采用现有标注，排除1条空转写后完成83条数据的 SoVITS20轮/GPT10轮训练。雫、禀、圭、里奈、优美、真琴也已按用户授权采用现有转写，排除6条空文本后以387条数据完成20/10训练，各自保存默认模型选择、参考音频与3条中日文样音；详见 [六角色训练记录](experiments/2026-10-16-remaining-characters.md)。无配套模型的任务会显示未训练并禁止合成，不会借用心铃模型。
 
 ## 网页操作
 
@@ -25,31 +25,31 @@
 | 全量原素材 | `data/source_library/<角色素材目录>/` |
 | 选材索引 | `data/manifests/<任务ID>.json` |
 | 切片 | `data/datasets/<任务ID>/wavs/` |
-| 人工校对 | `runs/<任务ID>/review.csv` |
+| 人工校对 | `data/datasets/<任务ID>/review.csv` |
 | 特征、续训状态、日志 | `runs/<任务ID>/` |
 | 推理权重 | `models/<任务ID>/{gpt,sovits}/` |
 | 脚本生成音频 | `outputs/<任务ID>/` |
 | 保存的参考音频 | `data/references/<角色ID>/` |
 
-心铃原任务继续使用 `config/task.json`，其余目录沿用现有任务 ID，没有搬动原数据。网页合成沿用官方临时缓存和下载按钮，需手动下载要保留的结果。管理界面不会自动启动训练。
+心铃原任务继续使用 `config/task.json`；其他任务统一使用 `<角色ID>_gsv_v2pro_v1`。标注文件 review.csv 与训练文本 train.list 统一放在各自数据集目录，心铃已迁移并保持字节一致；音频、特征和模型未变动。网页合成沿用官方临时缓存和下载按钮，需手动下载要保留的结果。管理界面不会自动启动训练。
 
 ## 新角色训练
 
-在项目根目录使用同一个独立 Python 环境。以下以雫第一任务为例；换成其他角色 ID 和任务 ID 即可。未上传素材前不要执行 prepare。训练前双击 Stop-WebUI 释放推理显存，训练完成后重新打开 Start-Inference。
+在项目根目录使用同一个独立 Python 环境。以下以雫第一任务为例；换成其他角色 ID 和任务 ID 即可。现有首版任务均已完成20/10训练；以下完整命令供新任务参考，已有任务的目标权重会复用。训练前双击 Stop-WebUI 释放推理显存，训练完成后重新打开 Start-Inference。
 
 ```powershell
 $python = 'D:\Project\voice\vendor\GPT-SoVITS\.venv\Scripts\python.exe'
 & $python scripts/character_manager.py list
 # 本地文件可直接登记选材，无需通过网页复制上传
-& $python scripts/character_manager.py sources shizuku 'D:\Project\voice\data\source_library\natsume_shizuku\选好的音声.wav' --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py doctor --character shizuku --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py prepare --character shizuku --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py transcribe --character shizuku --task shizuku_v2pro_v1
-# 人工校对 runs/shizuku_v2pro_v1/review.csv，确认 text/language 并设置 reviewed=true
-& $python scripts/tts_finetune.py audit --character shizuku --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py features --character shizuku --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py train-sovits --character shizuku --task shizuku_v2pro_v1
-& $python scripts/tts_finetune.py train-gpt --character shizuku --task shizuku_v2pro_v1
+& $python scripts/character_manager.py sources shizuku 'D:\Project\voice\data\source_library\雫\选好的音声.wav' --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py doctor --character shizuku --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py prepare --character shizuku --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py transcribe --character shizuku --task shizuku_gsv_v2pro_v1
+# 人工校对 data/datasets/shizuku_gsv_v2pro_v1/review.csv，确认 text/language 并设置 reviewed=true
+& $python scripts/tts_finetune.py audit --character shizuku --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py features --character shizuku --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py train-sovits --character shizuku --task shizuku_gsv_v2pro_v1
+& $python scripts/tts_finetune.py train-gpt --character shizuku --task shizuku_gsv_v2pro_v1
 ```
 
 新任务的训练总轮数、batch size、切片时长、种子可在各自 JSON 配置中调整。已准备数据的任务不允许再次添加素材；新建任务后重新选材。所有训练命令支持 `--config`，也支持角色/任务解析，仍保留人工校对门槛。命令行 `tts_sample.py --character <ID> --task <任务ID>` 使用该任务的模型选择和已保存参考，未保存参考时从该任务已校对切片选取。
