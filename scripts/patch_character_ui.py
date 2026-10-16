@@ -3,6 +3,25 @@ import ast
 
 
 def patch_character_ui(repo,work):
+    _patch_v1(repo,work)
+    source=repo/'GPT_SoVITS/inference_webui_fast.py'
+    text=source.read_text(encoding='utf-8')
+    if '# CHARACTER_MANAGEMENT_V2' in text: return
+    start_marker='    with gr.Column():\n        # with gr.Group():\n        gr.Markdown(value=i18n("模型切换"))'
+    end_marker='    with gr.Row():\n        with gr.Column():\n            gr.Markdown(value=i18n("*请上传并填写参考信息"))'
+    if start_marker not in text or end_marker not in text:
+        raise ValueError('Official model selection layout changed; management patch needs review.')
+    start=text.index(start_marker)
+    end=text.index(end_marker,start)
+    text=(text[:start]+'    # CHARACTER_MANAGEMENT_V2\n'
+          '    GPT_dropdown = character_panel.gpt\n'
+          '    SoVITS_dropdown = character_panel.sovits\n'
+          '    refresh_button = character_panel.refresh_models\n\n'+text[end:])
+    ast.parse(text)
+    source.write_text(text,encoding='utf-8')
+
+
+def _patch_v1(repo,work):
     source=repo/'GPT_SoVITS/inference_webui_fast.py'
     text=source.read_text(encoding='utf-8')
     if '# CHARACTER_MANAGEMENT_V1' in text: return

@@ -61,6 +61,9 @@ def main():
             if not args.no_browser:
                 webbrowser.open(f'http://127.0.0.1:{args.port}')
             return 0
+    if args.mode == 'inference':
+        from patch_character_ui import patch_character_ui
+        patch_character_ui(task.repo,task.work)
     reference=entry.get('reference') or {}
     (task.work/f'webui_{args.mode}.pid').write_text(str(os.getpid()),encoding='ascii')
     environment = task.environment(gpt_path=gpt, sovits_path=sovits, bert_path=bert,

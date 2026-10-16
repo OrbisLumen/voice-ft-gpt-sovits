@@ -1,5 +1,6 @@
 """Role management panel plugged into the official GPT-SoVITS inference UI."""
 import os
+from pathlib import Path
 import threading
 
 import gradio as gr
@@ -37,14 +38,21 @@ class CharacterPanel:
 
     def header(self):
         character_id,task_id=self.loaded
+        models=self.store.models(character_id,task_id)
         with gr.Group():
-            gr.Markdown('## 角色与模型管理')
+            gr.Markdown('## 选择并加载声音模型')
+            gr.Markdown('① 选择角色和任务　② 选择 GPT 与 SoVITS 轮次　③ 点击加载，再到下方合成语音。')
             with gr.Row():
                 self.character=gr.Dropdown(label='角色',choices=self.store.characters(),value=character_id)
                 self.task=gr.Dropdown(label='训练任务',choices=self.store.tasks(character_id),value=task_id)
                 self.refresh_roles=gr.Button('刷新角色列表')
+            with gr.Row():
+                self.gpt=gr.Dropdown(label='GPT模型列表',choices=models['gpt'],value=self.loaded_paths[0],interactive=True)
+                self.sovits=gr.Dropdown(label='SoVITS模型列表',choices=models['sovits'],value=self.loaded_paths[1],interactive=True)
+            with gr.Row():
                 self.load_button=gr.Button('加载所选模型',variant='primary')
-            self.status=gr.Markdown(self._status(character_id,task_id,'已加载当前模型。'))
+                self.refresh_models=gr.Button('刷新模型路径')
+            self.status=gr.Markdown(self._status(character_id,task_id,'模型已就绪，可以合成语音。'))
         with gr.Accordion('管理角色、数据与参考音频',open=False):
             gr.Markdown('角色和训练任务各自拥有数据、校对、权重及输出目录。已有任务的数据准备后，请新建任务再改变源素材。')
             with gr.Row():
@@ -67,7 +75,14 @@ class CharacterPanel:
             self.message=gr.Markdown('选择角色、任务及两份权重后，点击“加载所选模型”。')
 
     def _status(self,character_id,task_id,message):
-        return message+'\n\n'+self.store.summary(character_id,task_id)
+        loaded=' / '.join(f'`{Path(path).name}`' for path in self.loaded_paths)
+        state='当前已加载' if self.ready else '上次加载（当前不可合成）'
+        return (f'**{message}**\n\n{state}：{self.loaded[0]} · {self.loaded[1]}\n\n'
+                f'{loaded}')
+
+    @staticmethod
+    def generate_update(ready,reason='请先加载所选模型'):
+        return gr.update(interactive=ready,value='合成语音' if ready else reason)
 
     def _select(self,character_id,task_id):
         with self.lock: self.ready=False
@@ -79,7 +94,7 @@ class CharacterPanel:
         return (gr.update(choices=models['gpt'],value=default['gpt']),
                 gr.update(choices=models['sovits'],value=default['sovits']),audio,reference.get('text',''),
                 LANGUAGES.get(reference.get('language',config['language']),'日文'),
-                gr.update(interactive=False),config['seed'],
+                self.generate_update(False),config['seed'],
                 self._status(character_id,task_id,'尚未加载所选模型。点击“加载所选模型”；无权重的任务不能合成。'),None)
 
     def select_character(self,character_id):
@@ -93,9 +108,16 @@ class CharacterPanel:
     def refresh(self,character_id,task_id):
         return self._select(character_id,task_id)
 
-    def pending(self):
+    def pending(self,character_id,task_id,gpt,sovits):
         with self.lock: self.ready=False
-        return gr.update(interactive=False),'模型选择已变化，请点击“加载所选模型”。'
+        selected=' / '.join(f'`{Path(path).name}`' if path else '未选择' for path in (gpt,sovits))
+        return (self.generate_update(False),
+                self._status(character_id,task_id,'选择已更改，请点击上方“加载所选模型”。')+
+                f'\n\n待加载：{selected}')
+
+    def loading(self,character_id,task_id):
+        with self.lock: self.ready=False
+        return self.generate_update(False,'模型加载中…'),self._status(character_id,task_id,'正在加载所选模型，请稍候…')
 
     def load(self,character_id,task_id,gpt,sovits):
         try:
@@ -112,10 +134,10 @@ class CharacterPanel:
             reference=entry.get('reference')
             can_generate=bool(reference)
             message='配套模型已加载。' if can_generate else '配套模型已加载；先填写下方参考信息并保存给此任务。'
-            return gr.update(interactive=can_generate),self._status(character_id,task_id,message)
+            return self.generate_update(can_generate,'请先保存参考音频'),self._status(character_id,task_id,message)
         except Exception as exc:
             with self.lock: self.ready=False
-            return gr.update(interactive=False),f'加载失败：{exc}'
+            return self.generate_update(False,'模型加载失败，请重新选择并加载'),self._status(character_id,task_id,f'加载失败：{exc}')
 
     def run(self,character_id,task_id,inputs):
         with self.lock:
@@ -150,7 +172,7 @@ class CharacterPanel:
             with self.lock: self.ready=False
             choices=self.store.models(character_id,task_id)
             return (gr.update(choices=choices['gpt'],value=pair['gpt']),
-                    gr.update(choices=choices['sovits'],value=pair['sovits']),gr.update(interactive=False),
+                    gr.update(choices=choices['sovits'],value=pair['sovits']),self.generate_update(False),
                     '导入成功，请点击“加载所选模型”。')
         except Exception as exc: return gr.update(),gr.update(),gr.update(),f'导入失败：{exc}'
 
@@ -161,7 +183,7 @@ class CharacterPanel:
             self.store.set_reference(character_id,task_id,audio,text,code)
             with self.lock: can_generate=self.ready and self.loaded==(character_id,task_id)
             return ('已保存参考音频、台词与语种，下次选择此任务会自动填入。',
-                    self._status(character_id,task_id,'参考信息已保存。'),gr.update(interactive=can_generate))
+                    self._status(character_id,task_id,'参考信息已保存。'),self.generate_update(can_generate))
         except Exception as exc: return f'保存失败：{exc}',gr.update(),gr.update()
 
     def bind(self,gpt,sovits,audio,prompt,prompt_language,generate,seed,aux_refs,refresh):
@@ -170,15 +192,21 @@ class CharacterPanel:
         gpt.choices=models['gpt']
         sovits.choices=models['sovits']
         generate.interactive=bool(self.reference_audio)
+        if not generate.interactive: generate.value='请先保存参考音频'
+        self.quick_load=gr.Button('加载所选模型（与顶部相同）')
+        gr.Markdown('更换角色或模型轮次后，请先加载；加载成功后“合成语音”按钮会恢复可用。')
         outputs=[gpt,sovits,audio,prompt,prompt_language,generate,seed,self.status,aux_refs]
         queue={'concurrency_id':'character_models','concurrency_limit':1}
         self.character.change(self.select_character,[self.character],[self.task,*outputs],**queue)
         self.task.change(self.select_task,[self.character,self.task],outputs,**queue)
         self.refresh_roles.click(lambda:gr.update(choices=self.store.characters()),[],self.character,**queue)
         refresh.click(self.refresh,[self.character,self.task],outputs,**queue)
-        gpt.input(self.pending,[],[generate,self.status],**queue)
-        sovits.input(self.pending,[],[generate,self.status],**queue)
-        self.load_button.click(self.load,[self.character,self.task,gpt,sovits],[generate,self.status],**queue)
+        selection=[self.character,self.task,gpt,sovits]
+        gpt.input(self.pending,selection,[generate,self.status],**queue)
+        sovits.input(self.pending,selection,[generate,self.status],**queue)
+        for button in (self.load_button,self.quick_load):
+            button.click(self.loading,[self.character,self.task],[generate,self.status],**queue).then(
+                self.load,selection,[generate,self.status],**queue)
         self.add_button.click(self.add,[self.new_id,self.new_name,self.new_language],[self.character,self.message],**queue)
         self.task_button.click(self.new_task,[self.character,self.task_suffix],[self.task,self.message],**queue)
         self.source_button.click(self.sources,[self.character,self.task,self.source_files,self.source_split],[self.message,self.status],**queue)
