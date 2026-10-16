@@ -6,7 +6,7 @@ import textwrap
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def build():
+def build(character_id='misuzu', display_name='心铃', config='config/task.json'):
     cells = []
     def add(kind, source):
         cell = {'cell_type': kind, 'metadata': {}, 'source': (textwrap.dedent(source).strip()+'\n').splitlines(keepends=True)}
@@ -37,8 +37,8 @@ def build():
     RUN_PREPARE = False  # 本机数据已准备并校对；重建任务时才开启
     RUN_ASR = False      # 使用已校对review.csv
     RUN_FEATURES = False  # 校对review.csv后开启
-    RUN_TRAIN = True      # 从检查点续训；SoVITS与GPT依次训练
-    RUN_SAMPLE = True     # 训练后加载配置指定的总轮数权重，生成中日语样音
+    RUN_TRAIN = False     # 人工校对并完成特征提取后，手动开启
+    RUN_SAMPLE = False    # 训练完成后，手动开启
     candidates = [Path.cwd(), *Path.cwd().parents]
     ROOT = next(p.resolve() for p in candidates if (p/'scripts/tts_finetune.py').is_file())
     CONFIG = ROOT/'config/task.json'
@@ -88,7 +88,7 @@ def build():
     背景音乐、多人重叠、长片段需先重新筛选；不要为通过检查直接全选true。
     ''')
     add('code', '''
-    review = WORK/'review.csv'
+    review = ROOT/cfg['dataset']/'review.csv'
     print('校对文件:', review)
     if review.exists():
         display(Markdown(f'[打开校对CSV](../{review.relative_to(ROOT).as_posix()})'))
@@ -135,10 +135,31 @@ def build():
     else:
         print('RUN_SAMPLE=False；训练完成后开启生成试听。')
     ''')
+    if character_id != 'misuzu':
+        cells[0]['source'] = [f'# {display_name}本地 TTS：GPT-SoVITS v2Pro 微调\n',
+            '\n数据、标注接受情况及训练进度以当前任务记录为准；已有目标权重会复用。\n',
+            '标注检查入口为 data/datasets/<任务名>/review.html；原始转写及训练接受记录保存在任务 runs 目录。\n',
+            '准备、转写、特征、训练、试听开关默认全部关闭；Run All 不会自动训练。\n']
+        for cell in cells:
+            cell['source'] = [line.replace("CONFIG = ROOT/'config/task.json'", f"CONFIG = ROOT/'{config}'")
+                .replace('本机数据已准备并校对；重建任务时才开启', '本机数据已准备；重建任务时才开启')
+                .replace('使用已校对review.csv', '使用当前review.csv，重新转写前先备份')
+                .replace('本机已通过两阶段各1轮实际训练和保存；仍需检查后续质量，不并行重跑。',
+                         '首次训练须先完成标注检查，再顺序提取特征和训练；已有目标权重会复用。') for line in cell['source']]
     notebook = {'cells': cells, 'metadata': {'kernelspec': {'display_name': 'Python (voice)',
         'language': 'python', 'name': 'voice'}, 'language_info': {'name': 'python'}}, 'nbformat': 4, 'nbformat_minor': 4}
-    (ROOT/'notebooks/finetune_misuzu_tts.ipynb').write_text(json.dumps(notebook, ensure_ascii=False, indent=1)+'\n', encoding='utf-8')
+    (ROOT/f'notebooks/finetune_{character_id}_tts.ipynb').write_text(json.dumps(notebook, ensure_ascii=False, indent=1)+'\n', encoding='utf-8')
 
 
 if __name__ == '__main__':
-    build()
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--all', action='store_true')
+    args = parser.parse_args()
+    if args.all:
+        registry = json.loads((ROOT/'config/characters.json').read_text(encoding='utf-8'))
+        for character_id, character in registry['characters'].items():
+            entry = character['tasks'][character['active_task']]
+            build(character_id, character['display_name'], entry['config'])
+    else:
+        build()

@@ -76,7 +76,7 @@ def main():
     reference=(profile or {}).get('reference')
     rows=[]
     if not reference:
-        with (work/'review.csv').open(encoding='utf-8-sig', newline='') as stream:
+        with (ROOT/cfg['dataset']/'review.csv').open(encoding='utf-8-sig', newline='') as stream:
             rows = list(csv.DictReader(stream))
     references = []
     for row in rows:

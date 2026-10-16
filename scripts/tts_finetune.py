@@ -208,7 +208,7 @@ class Task:
         eligible = [r for r in manifest['clips'] if r['eligible']]
         for number, row in enumerate(eligible[:limit] if limit else eligible, 1):
             result = drafts/(row['name']+'.json')
-            if result.exists():
+            if result.exists() and utils.read_json(result)['text'].strip():
                 continue
             # Pass a 16k waveform directly; newer PyAV removed an argument used by Faster Whisper 1.2.
             waveform, sample_rate = sf.read(ROOT/row['path'], dtype='float32')
@@ -218,11 +218,19 @@ class Task:
                 vad_filter=True, condition_on_previous_text=False)
             pieces = list(segments)
             text = ''.join(p.text for p in pieces).strip()
+            retried_without_vad = not bool(text)
+            if retried_without_vad:
+                segments, info = model.transcribe(waveform, language=asr_language,
+                    beam_size=self.cfg['asr']['beam_size'], vad_filter=False,
+                    condition_on_previous_text=False)
+                pieces = list(segments)
+                text = ''.join(p.text for p in pieces).strip()
             utils.write_json(result, {'name': row['name'], 'text': text, 'audio_sha256': row['sha256'],
+                'retried_without_vad': retried_without_vad,
                 'language_probability': info.language_probability,
                 'avg_logprob': sum(p.avg_logprob for p in pieces)/len(pieces) if pieces else None})
             print(f'ASR {number}/{len(eligible)} {row["name"]}: {text}', flush=True)
-        review = self.work/'review.csv'
+        review = self.dataset/'review.csv'
         existing = {}
         if review.exists():
             with review.open(encoding='utf-8-sig', newline='') as stream:
@@ -242,23 +250,23 @@ class Task:
 
     def audit(self):
         manifest = utils.read_json(self.work/'dataset_manifest.json')
-        rows = read_review(self.work/'review.csv', manifest, self.cfg['language'])
+        rows = read_review(self.dataset/'review.csv', manifest, self.cfg['language'])
         by_name = {r['name']: r for r in manifest['clips']}
         for row in rows:
             if digest(ROOT/by_name[row['name']]['path']) != by_name[row['name']]['sha256']:
                 raise ValueError('Training audio changed since preparation.')
         text = '\n'.join(f'{ROOT/by_name[r["name"]]["path"]}|{self.cfg["name"]}|{r["language"]}|{r["text"].strip()}' for r in rows)+'\n'
-        path = self.work/'train.list'
+        path = self.dataset/'train.list'
         if path.exists() and path.read_text(encoding='utf-8') != text and (self.experiment/'2-name2text.txt').exists():
             raise ValueError('Reviewed text changed after feature preparation; use another task name.')
         path.write_text(text, encoding='utf-8')
-        utils.write_json(self.work/'transcript_audit.json', {'clips': len(rows), 'review_sha256': digest(self.work/'review.csv'),
+        utils.write_json(self.work/'transcript_audit.json', {'clips': len(rows), 'review_sha256': digest(self.dataset/'review.csv'),
             'train_list_sha256': digest(path), 'all_reviewed': True})
         return rows
 
     def features(self):
         rows = self.audit()
-        env = {'inp_text': self.work/'train.list', 'inp_wav_dir': self.dataset/'wavs',
+        env = {'inp_text': self.dataset/'train.list', 'inp_wav_dir': self.dataset/'wavs',
             'exp_name': self.cfg['name'], 'i_part': '0', 'all_parts': '1', 'opt_dir': self.experiment,
             'bert_pretrained_dir': self.pretrained/'chinese-roberta-wwm-ext-large',
             'cnhubert_base_dir': self.pretrained/'chinese-hubert-base', 'is_half': 'True',
@@ -281,7 +289,7 @@ class Task:
                 if not (self.experiment/relative).is_file():
                     raise ValueError(f'Missing feature: {relative}')
         self.validate_features(expected)
-        utils.write_json(self.work/'features_ready.json', {'train_list_sha256': digest(self.work/'train.list'), 'clips': len(expected), 'all_finite': True})
+        utils.write_json(self.work/'features_ready.json', {'train_list_sha256': digest(self.dataset/'train.list'), 'clips': len(expected), 'all_finite': True})
         self.training_configs()
 
     def validate_features(self, expected):
@@ -328,7 +336,7 @@ class Task:
     def train(self, phase, epochs=None):
         rows = self.audit()
         ready = utils.read_json(self.work/'features_ready.json')
-        if ready['train_list_sha256'] != digest(self.work/'train.list'):
+        if ready['train_list_sha256'] != digest(self.dataset/'train.list'):
             raise ValueError('Features are stale for current transcript list.')
         self.validate_features({r['name'] for r in rows})
         target_epoch = epochs if epochs is not None else self.cfg['training'][f'{phase}_epochs']
@@ -367,7 +375,7 @@ class Task:
         for path in ('doctor.json', 'dataset_manifest.json', 'transcript_audit.json', 'features_ready.json'):
             file = self.work/path
             print(path, 'exists' if file.exists() else 'pending')
-        print('Review:', self.work/'review.csv')
+        print('Review:', self.dataset/'review.csv')
         print('Output:', self.output)
         print('Weights:', self.weights)
 

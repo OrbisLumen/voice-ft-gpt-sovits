@@ -48,6 +48,7 @@ class CharacterTests(unittest.TestCase):
 
     def test_cross_character_and_task_pair_cannot_load(self):
         a=self.store.add('alpha','A')
+        self.assertEqual(a,'alpha_gsv_v2pro_v1')
         b=self.store.add('beta','B')
         newer=self.store.new_task('alpha','v2')
         g,s=self.weights('alpha',a)

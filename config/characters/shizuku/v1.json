@@ -1,13 +1,13 @@
 {
-  "name": "shizuku_v2pro_v1",
+  "name": "shizuku_gsv_v2pro_v1",
   "repository": "vendor/GPT-SoVITS",
   "commit": "1b47ca07ef43a284e0b8bd7f29d3e1e3ff76082a",
   "version": "v2Pro",
-  "source_manifest": "data/manifests/shizuku_v2pro_v1.json",
+  "source_manifest": "data/manifests/shizuku_gsv_v2pro_v1.json",
   "selected_only": true,
-  "dataset": "data/datasets/shizuku_v2pro_v1",
-  "work": "runs/shizuku_v2pro_v1",
-  "output": "outputs/shizuku_v2pro_v1",
+  "dataset": "data/datasets/shizuku_gsv_v2pro_v1",
+  "work": "runs/shizuku_gsv_v2pro_v1",
+  "output": "outputs/shizuku_gsv_v2pro_v1",
   "language": "ja",
   "seed": 20261012,
   "min_seconds": 1.0,
@@ -27,6 +27,6 @@
     "gradient_checkpointing": true,
     "gpt_num_workers": 0
   },
-  "weights": "models/shizuku_v2pro_v1",
+  "weights": "models/shizuku_gsv_v2pro_v1",
   "character_id": "shizuku"
 }

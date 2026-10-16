@@ -128,7 +128,7 @@ class CharacterStore:
 
     def _new_task(self, registry, character_id, suffix, language):
         self._identifier(suffix)
-        name=f'{character_id}_v2pro_{suffix}'
+        name=f'{character_id}_gsv_v2pro_{suffix}'
         character=registry['characters'][character_id]
         if name in character['tasks']: raise ValueError('任务已存在，不会覆盖。')
         config_path=f'config/characters/{character_id}/{suffix}.json'
@@ -264,7 +264,7 @@ class CharacterStore:
         character,_,entry,config=self.task(character_id,task_id)
         models=self.models(character_id,task_id)
         source=utils.read_json(self.local(config['source_manifest']))
-        review=self.local(config['work'])/'review.csv'
+        review=self.local(config['dataset'])/'review.csv'
         status='有配套推理权重' if models['gpt'] and models['sovits'] else '未训练 / 缺少配套权重'
         return (f'**{character["display_name"]} · {task_id}** — {status}\n\n'
                 f'GPT {len(models["gpt"])}份 / SoVITS {len(models["sovits"])}份；源素材 {len(source["files"])}段。\n\n'

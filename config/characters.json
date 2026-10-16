@@ -6,7 +6,7 @@
     "misuzu": {
       "display_name": "本间心铃",
       "language": "ja",
-      "raw_directory": "data/source_library/honma_misuzu",
+      "raw_directory": "data/source_library/心铃",
       "active_task": "misuzu_gsv_v2pro_v1",
       "tasks": {
         "misuzu_gsv_v2pro_v1": {
@@ -22,12 +22,112 @@
     "shizuku": {
       "display_name": "夏目雫",
       "language": "ja",
-      "raw_directory": "data/source_library/natsume_shizuku",
-      "active_task": "shizuku_v2pro_v1",
+      "raw_directory": "data/source_library/雫",
+      "active_task": "shizuku_gsv_v2pro_v1",
       "tasks": {
-        "shizuku_v2pro_v1": {
+        "shizuku_gsv_v2pro_v1": {
           "config": "config/characters/shizuku/v1.json",
-          "reference": null
+          "reference": {
+            "audio_path": "data/references/shizuku/238ca32126f91744.wav",
+            "text": "私も気がねなくしもネタを言えますね",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "rin": {
+      "display_name": "禀",
+      "language": "ja",
+      "raw_directory": "data/source_library/禀",
+      "active_task": "rin_gsv_v2pro_v1",
+      "tasks": {
+        "rin_gsv_v2pro_v1": {
+          "config": "config/characters/rin/v1.json",
+          "reference": {
+            "audio_path": "data/references/rin/849a3d2e902fdb78.wav",
+            "text": "けど、ヒカワさんにそう言ってもらえると嬉しいな",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "kei": {
+      "display_name": "圭",
+      "language": "ja",
+      "raw_directory": "data/source_library/圭",
+      "active_task": "kei_gsv_v2pro_v1",
+      "tasks": {
+        "kei_gsv_v2pro_v1": {
+          "config": "config/characters/kei/v1.json",
+          "reference": {
+            "audio_path": "data/references/kei/265018fd71b30fea.wav",
+            "text": "え?やっぱり俺のために作ってくれたの?",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "ai": {
+      "display_name": "蓝",
+      "language": "ja",
+      "raw_directory": "data/source_library/蓝",
+      "active_task": "ai_gsv_v2pro_v1",
+      "tasks": {
+        "ai_gsv_v2pro_v1": {
+          "config": "config/characters/ai/v1.json",
+          "reference": {
+            "audio_path": "data/references/ai/76848ec4ee7c245a.wav",
+            "text": "私はあの時嬉しかったんだぞ",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "rina": {
+      "display_name": "里奈",
+      "language": "ja",
+      "raw_directory": "data/source_library/里奈",
+      "active_task": "rina_gsv_v2pro_v1",
+      "tasks": {
+        "rina_gsv_v2pro_v1": {
+          "config": "config/characters/rina/v1.json",
+          "reference": {
+            "audio_path": "data/references/rina/0beb44fb4bc5276e.wav",
+            "text": "お兄ちゃんとしては",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "yuumi": {
+      "display_name": "优美",
+      "language": "ja",
+      "raw_directory": "data/source_library/优美",
+      "active_task": "yuumi_gsv_v2pro_v1",
+      "tasks": {
+        "yuumi_gsv_v2pro_v1": {
+          "config": "config/characters/yuumi/v1.json",
+          "reference": {
+            "audio_path": "data/references/yuumi/531f862d649fc1a1.wav",
+            "text": "とりあえずリナがそれだけ絶賛する女性",
+            "language": "ja"
+          }
+        }
+      }
+    },
+    "makoto": {
+      "display_name": "真琴",
+      "language": "ja",
+      "raw_directory": "data/source_library/真琴",
+      "active_task": "makoto_gsv_v2pro_v1",
+      "tasks": {
+        "makoto_gsv_v2pro_v1": {
+          "config": "config/characters/makoto/v1.json",
+          "reference": {
+            "audio_path": "data/references/makoto/3c12305cacac91b0.wav",
+            "text": "授業量だけでも年間60万近く払ってるんだから",
+            "language": "ja"
+          }
         }
       }
     }
