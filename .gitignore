@@ -11,6 +11,12 @@ notebooks/history/
 .idea/
 .vscode/
 .DS_Store
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+*.log
+*.pem
+*.key
 *.wav
 *.flac
 *.mp3

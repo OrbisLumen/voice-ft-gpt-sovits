@@ -4,6 +4,8 @@
 
 Git 管理脚本、配置、测试、文稿、文档，以及清空执行输出的 Notebook。音频、模型权重、特征、转写草稿、运行日志和历史已执行 Notebook 保存在本机，遵循 `.gitignore`，不要使用 `git add -f` 纳入提交。
 
+远端仓库为私有仓库 `voice-ft-gpt-sovits`，默认分支为 `main`。推送保留现有按主题组织的历史；不要提交环境密钥、私钥、Notebook 执行输出或本地运行产物。克隆仓库只会取得代码与配置，不包含原音库、训练数据和模型权重。
+
 文稿保存在 `texts/`：`original.md` 为原稿，`narration_v1.md` 为口播稿第一版。后续口播稿可按 `narration_v2.md`、`narration_v3.md` 编号；切换推理版本时更新 `config/narration.json` 的 `source` 和相关文档。
 
 ## 提交规范
